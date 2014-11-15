@@ -253,7 +253,7 @@ __END__
 
 =head1 VERSION
 
-  version 1.01
+  version 0.01
 
 =head1 SYNOPSIS
 
