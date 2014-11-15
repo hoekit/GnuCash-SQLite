@@ -1,0 +1,6 @@
+Revision history for Perl module GnuCash::SQLite.
+
+0.01  Sat Jun 14 09:30:54 2014
+	- original version; created by h2xs 1.23 with options
+		-XAn GnuCash::SQLite
+
