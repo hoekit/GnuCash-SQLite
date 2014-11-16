@@ -10,7 +10,7 @@ use Carp;
 use Path::Tiny;
 use Data::Dumper;
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 sub new {
     my $class = shift;
@@ -21,6 +21,7 @@ sub new {
         unless defined($attr{db});
     croak "File: $attr{db} does not exist."
         unless path($attr{db})->is_file;
+
     $self->{db} = $attr{db};
     $self->{dbh} = DBI->connect("dbi:SQLite:dbname=$self->{db}","","");
 
@@ -28,21 +29,22 @@ sub new {
     return $self;
 }
 
-# Generate a 32-character UUID
-sub gen_guid {
+# Create a 32-character UUID
+sub create_guid {
     my $uuid = create_uuid_as_string(UUID_V1);
     $uuid =~ s/-//g;
     return $uuid;
 }
 
-# Given an account name, return the GUID of the currency associated with that
-# account
-sub ccy_guid {
+# Given an account name, return the GUID of the currency (aka commodity)
+# associated with that account
+sub commodity_guid {
     my $self = shift;
-    my $acct = shift;
+    my $account_name = shift;
 
     my $sql = "SELECT commodity_guid FROM accounts "
-            . "WHERE guid = (".$self->_guid_sql($acct).")";
+            . "WHERE guid = (".$self->account_guid_sql($account_name).")";
+
     return $self->_runsql($sql)->[0][0];
 }
 
@@ -56,7 +58,7 @@ sub ccy_guid {
 # For example, the 'Asia/Bangkok' timezone is UTC +7:00
 #   given txn date of 20140101 (in the local timezone)
 #   return 20131231170000 (which gets stored in the db)
-sub gen_post_date {
+sub UTC_post_date {
     my $self = shift;
     my ($YYYY, $MM, $DD) = (shift =~ /(....)(..)(..)/);
 
@@ -68,24 +70,21 @@ sub gen_post_date {
         time_zone => 'local' );
     $dt->set_time_zone('UTC');
     return $dt->ymd('') . $dt->hms('');
-
-    $dt->subtract(days => 1);
-    return $dt->ymd('') . '170000';
 }
 
 # Returns the system date in YYYYMMDDhhmmss format
 # Timezone is UTC (GMT 00:00)
-sub gen_enter_date {
+sub UTC_enter_date {
     my $dt = DateTime->now();
     return $dt->ymd('').$dt->hms('');
 }
 
 # Given an account name, return the GUID of the account
-sub acct_guid {
+sub account_guid {
     my $self = shift;
-    my $acct_name = shift;
+    my $account_name = shift;
 
-    my $sql = $self->_guid_sql($acct_name);
+    my $sql = $self->account_guid_sql($account_name);
     return $self->_runsql($sql)->[0][0];
 }
 
@@ -95,7 +94,7 @@ sub acct_guid {
 #    i.e. SELECT guid FROM accounts WHERE name = 'Cash';
 # That fails when accounts of the same name have different parents
 #    e.g. Assets:Husband:Cash and Assets:Wife:Cash
-sub _guid_sql {
+sub account_guid_sql {
     my $self = shift;
     my ($acct_name) = @_;
     my $sub_sql = 'SELECT guid FROM accounts WHERE name = "Root Account"';
@@ -108,7 +107,7 @@ sub _guid_sql {
 }
 
 # Given a guid, return a list of child guids or if none, an empty arrayref
-sub _child_guid {
+sub child_guid {
     my $self = shift;
     my $parent_guid = shift;
 
@@ -137,7 +136,7 @@ sub _guid_bal {
     my $bal = shift || 0;
 
 	# Accumulate balances in child accounts
-	foreach my $g (@{$self->_child_guid($guid)}) {
+	foreach my $g (@{$self->child_guid($guid)}) {
 		$bal += $self->_guid_bal($g);
 	}
 	
@@ -147,11 +146,11 @@ sub _guid_bal {
 
 # Given an account name, 
 # Return the balance in that account, include child accounts, if any
-sub acct_bal {
+sub account_balance {
     my $self = shift;
     my $acct_name = shift;
     
-    my $guid = $self->acct_guid($acct_name);
+    my $guid = $self->account_guid($acct_name);
     return undef unless defined ($guid);
     return $self->_guid_bal($guid);
 }
@@ -160,12 +159,12 @@ sub acct_bal {
 # Transaction is a hashref e.g.:
 #
 #   my $txn = {
-#       tx_date        => '20140102',
-#       tx_description => 'Deposit monthly savings',
-#       tx_from_acct   => 'Assets:Cash',
-#       tx_to_acct     => 'Assets:aBank',
-#       tx_amt         => 2540.15,
-#       tx_num         => ''
+#       date         => '20140102',
+#       description  => 'Deposit monthly savings',
+#       from_account => 'Assets:Cash',
+#       to_account   => 'Assets:aBank',
+#       amount       => 2540.15,
+#       number       => ''
 #   };
 #
 # To effect the transaction, do the following:
@@ -174,7 +173,7 @@ sub acct_bal {
 #   3. Add 1 row to slots table
 # See
 # http://wideopenstudy.blogspot.com/2014/11/how-to-add-transaction-programmatically.html
-sub add_txn {
+sub add_transaction {
     my $self = shift;
     my $txn = shift;
 
@@ -194,14 +193,14 @@ sub add_txn {
 
     # Run the SQLs
     $self->_runsql($txn_sql, map { $txn->{$_} }
-        qw/tx_guid tx_ccy_guid tx_num tx_post_date tx_enter_date
-           tx_description /);
+        qw/tx_guid tx_ccy_guid number tx_post_date tx_enter_date
+           description /);
     $self->_runsql($splt_sql, map { $txn->{$_} }
         qw/splt_guid_1 tx_guid tx_from_guid tx_from_numer tx_from_numer/);
     $self->_runsql($splt_sql, map { $txn->{$_} }
         qw/splt_guid_2 tx_guid tx_to_guid tx_to_numer tx_to_numer/);
     $self->_runsql($slot_sql, map { $txn->{$_} }
-        qw/tx_guid tx_date/);
+        qw/tx_guid date/);
 }
 
 # Augment the transaction with data required to generate data rows
@@ -213,18 +212,18 @@ sub _augment {
     # Copy only the fields needed
     my $txn = {};
     map { $txn->{$_} = $txn_orig->{$_} } (
-        qw/tx_date tx_description tx_from_acct tx_to_acct tx_amt tx_num/);
+        qw/date description from_account to_account amount number/);
 
-    $txn->{tx_guid}       = $self->gen_guid();
-    $txn->{tx_ccy_guid}   = $self->ccy_guid($txn->{tx_from_acct});
-    $txn->{tx_post_date}  = $self->gen_post_date($txn->{tx_date});
-    $txn->{tx_enter_date} = $self->gen_enter_date();
-    $txn->{tx_from_guid}  = $self->acct_guid($txn->{tx_from_acct});
-    $txn->{tx_to_guid}    = $self->acct_guid($txn->{tx_to_acct});
-    $txn->{tx_from_numer} = $txn->{tx_amt} * -100;
-    $txn->{tx_to_numer}   = $txn->{tx_amt} *  100;
-    $txn->{splt_guid_1}   = $self->gen_guid();
-    $txn->{splt_guid_2}   = $self->gen_guid();
+    $txn->{tx_guid}       = $self->create_guid();
+    $txn->{tx_ccy_guid}   = $self->commodity_guid($txn->{from_account});
+    $txn->{tx_post_date}  = $self->UTC_post_date($txn->{date});
+    $txn->{tx_enter_date} = $self->UTC_enter_date();
+    $txn->{tx_from_guid}  = $self->account_guid($txn->{from_account});
+    $txn->{tx_to_guid}    = $self->account_guid($txn->{to_account});
+    $txn->{tx_from_numer} = $txn->{amount} * -100;
+    $txn->{tx_to_numer}   = $txn->{amount} *  100;
+    $txn->{splt_guid_1}   = $self->create_guid();
+    $txn->{splt_guid_2}   = $self->create_guid();
 
     return $txn;
 }
@@ -253,7 +252,7 @@ __END__
 
 =head1 VERSION
 
-  version 0.01
+  version 0.02
 
 =head1 SYNOPSIS
 
@@ -263,22 +262,22 @@ __END__
   $book = GnuCash::SQLite->new(db => 'my_accounts.gnucash');
 
   # get account balances
-  $book->acct_bal('Assets:Cash');   # always provide account names in full
-  $book->acct_bal('Assets');        # includes child accounts e.g. Assets:Cash
+  $on_hand = $book->account_balance('Assets:Cash');
+  $total   = $book->account_balance('Assets');
 
   # add a transaction
-  $book->add_txn({
-      tx_date        => '20140102',
-      tx_description => 'Deposit monthly savings',
-      tx_from_acct   => 'Assets:Cash',
-      tx_to_acct     => 'Assets:aBank',
-      tx_amt         => 2540.15,
-      tx_num         => ''
+  $book->add_transaction({
+      date         => '20140102',
+      description  => 'Deposit monthly savings',
+      from_account => 'Assets:Cash',
+      to_account   => 'Assets:aBank',
+      amount       => 2540.15,
+      number       => ''
   });
 
   # access internal GUIDs
-  $book->acct_guid('Assets:Cash');  # GUID of account
-  $book->ccy_guid('Assets:Cash');   # GUID of currency 
+  $book->account_guid('Assets:Cash');     # GUID of account
+  $book->commodity_guid('Assets:Cash');   # GUID of currency 
 
 =head1 DESCRIPTION
 
@@ -305,10 +304,10 @@ parameter.
 If no file parameter is passed, or if the file is missing, the program will
 terminate.
 
-=head2 acct_bal
+=head2 account_balance
 
-  $book->acct_bal('Assets:Cash');   # always provide account names in full
-  $book->acct_bal('Assets');        # includes child accounts e.g. Assets:Cash
+  $book->account_balance('Assets:Cash');   # always provide account names in full
+  $book->account_balance('Assets');        # includes child accounts e.g. Assets:Cash
 
 Given an account name, return the balance in the account. Account names must
 be provided in full to distinguish between accounts with the same name but
@@ -317,25 +316,25 @@ different parents e.g. Assets:Alice:Cash and Assets:Bob:Cash
 If a parent account name is provided, the total balance, which includes all
 children accounts, will be returned.
 
-=head2 add_txn
+=head2 add_transaction
 
   $deposit = {
-      tx_date        => '20140102',
-      tx_description => 'Deposit monthly savings',
-      tx_from_acct   => 'Assets:Cash',
-      tx_to_acct     => 'Assets:aBank',
-      tx_amt         => 2540.15,
-      tx_num         => ''
+      date         => '20140102',
+      description  => 'Deposit monthly savings',
+      from_account => 'Assets:Cash',
+      to_account   => 'Assets:aBank',
+      amount       => 2540.15,
+      number       => ''
   };
-  $book->add_txn($deposit);
+  $book->add_transaction($deposit);
 
 A transaction is defined to have the fields as listed in the example above.
 All fields are mandatory and hopefully self-explanatory. Constraints on some
 of the fields are listed below:
 
-    tx_date         Date of the transaction. Formatted as YYYYMMDD.
-    tx_from_acct    Full account name required.
-    tx_to_acct      Full account name required.
+    date         Date of the transaction. Formatted as YYYYMMDD.
+    from_account Full account name required.
+    to_account   Full account name required.
 
 
 =head1 CAVEATS/LIMITATIONS

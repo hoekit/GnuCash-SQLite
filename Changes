@@ -1,6 +1,13 @@
 Revision history for Perl module GnuCash::SQLite.
 
-0.01  Sat Jun 14 09:30:54 2014
+0.01  14 Jun 2014
 	- original version; created by h2xs 1.23 with options
 		-XAn GnuCash::SQLite
+
+0.02  16 Jun 2014
+	- use full words instead of variables in interface
+		- e.g. account_balance instead of acct_bal, See below:
+        - http://bit.ly/1sV5vej
+        - http://bit.ly/1vihVE3
+        - http://c2.com/cgi/wiki?GoodVariableNames
 

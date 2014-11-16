@@ -39,67 +39,67 @@ try {
         exp => 1 );
 };
 
-$guid = $reader->gen_guid();
-tt('gen_guid() generates 32-characters',
+$guid = $reader->create_guid();
+tt('create_guid() generates 32-characters',
     got => length($guid),
     exp => 32 );
 
-tt('ccy_guid() found correct GUID.',
-    got => $reader->ccy_guid('Assets:Cash'),
+tt('commodity_guid() found correct GUID.',
+    got => $reader->commodity_guid('Assets:Cash'),
     exp => 'be2788c5c017bb63c859430612e64093');
 
-tt('gen_post_date() generated correct timestamp.',
-    got => $reader->gen_post_date('20140101'),
+tt('UTC_post_date() generated correct timestamp.',
+    got => $reader->UTC_post_date('20140101'),
     exp => '20131231170000');
 
 my $dt = DateTime->now();
-tt('gen_enter_date() generated correct timestamp.',
-    got => $reader->gen_enter_date(),
+tt('UTC_enter_date() generated correct timestamp.',
+    got => $reader->UTC_enter_date(),
     exp => $dt->ymd('').$dt->hms(''));
 
-tt('acct_guid() found correct GUID.',
-    got => $reader->acct_guid('Assets:Cash'),
+tt('account_guid() found correct GUID.',
+    got => $reader->account_guid('Assets:Cash'),
     exp => '6a86047e3b12a6c4748fbf8fde76c0c0');
 
-tt('_guid_sql() returns correct SQL.',
-    got => $reader->_guid_sql('Assets:Cash'),
+tt('account_guid_sql() returns correct SQL.',
+    got => $reader->account_guid_sql('Assets:Cash'),
     exp =>'SELECT guid FROM accounts WHERE name = "Cash" AND parent_guid = (SELECT guid FROM accounts WHERE name = "Assets" AND parent_guid = (SELECT guid FROM accounts WHERE name = "Root Account"))');
 
-$guid = $reader->acct_guid('Assets');
-tt('_child_guid() returns correct list of child guids.',
-    got => join('--',sort @{$reader->_child_guid($guid)}),
+$guid = $reader->account_guid('Assets');
+tt('child_guid() returns correct list of child guids.',
+    got => join('--',sort @{$reader->child_guid($guid)}),
     exp => join('--',('6a86047e3b12a6c4748fbf8fde76c0c0',
                       '6b870a6ef2c3fbbff0ec6df32108ac34')));
 
-tt('_child_guid() returns empty list for leaf accounts.',
-    got => join('--',sort @{$reader->_child_guid('Assets:Cash')}),
+tt('child_guid() returns empty list for leaf accounts.',
+    got => join('--',sort @{$reader->child_guid('Assets:Cash')}),
     exp => '');
 
-$guid = $reader->acct_guid('Assets:Cash');
+$guid = $reader->account_guid('Assets:Cash');
 tt('_node_bal() returns correct balance.',
     got => $reader->_node_bal($guid),
     exp => 10000);
 
-$guid = $reader->acct_guid('Assets:Cash');
+$guid = $reader->account_guid('Assets:Cash');
 tt('_guid_bal() returns correct balance for leaf accounts.',
     got => $reader->_guid_bal($guid),
     exp => 10000);
 
-$guid = $reader->acct_guid('Assets');
+$guid = $reader->account_guid('Assets');
 tt('_guid_bal() returns correct balance for parent accounts.',
     got => $reader->_guid_bal($guid),
     exp => 15000);
 
-tt('acct_bal() returns correct balance for leaf accounts.',
-    got => $reader->acct_bal('Assets:Cash'),
+tt('account_balance() returns correct balance for leaf accounts.',
+    got => $reader->account_balance('Assets:Cash'),
     exp => 10000);
 
-tt('acct_bal() returns correct parent accounts balances.',
-    got => $reader->acct_bal('Assets'),
+tt('account_balance() returns correct parent accounts balances.',
+    got => $reader->account_balance('Assets'),
     exp => 15000 );
 
-tt('acct_bal() returns undef for invalid account names.',
-    got => $reader->acct_bal('No:Such:Account'),
+tt('account_balance() returns undef for invalid account names.',
+    got => $reader->account_balance('No:Such:Account'),
     exp => undef );
 
 
@@ -115,22 +115,22 @@ my $bank_bal  =  5000;
 my $asset_bal = 15000;
 
 my $txn = {
-    tx_date        => '20140102',
-    tx_description => 'Deposit monthly savings',
-    tx_from_acct   => 'Assets:Cash',
-    tx_to_acct     => 'Assets:aBank',
-    tx_amt         => 2540.15,
-    tx_num         => ''
+    date         => '20140102',
+    description  => 'Deposit monthly savings',
+    from_account => 'Assets:Cash',
+    to_account   => 'Assets:aBank',
+    amount       => 2540.15,
+    number       => ''
 };
 
 # Create a string that can be used in a regex match
 $exp = hashref2str({
-        tx_date         => '20140102',
-        tx_description  => 'Deposit monthly savings',
-        tx_from_acct    => 'Assets:Cash',
-        tx_to_acct      => 'Assets:aBank',
-        tx_amt          => 2540.15,
-        tx_num          => '',
+        date         => '20140102',
+        description  => 'Deposit monthly savings',
+        from_account => 'Assets:Cash',
+        to_account   => 'Assets:aBank',
+        amount       => 2540.15,
+        number       => '',
         tx_guid         => '.' x 32,    # some 32-char string
         tx_ccy_guid     => 'be2788c5c017bb63c859430612e64093',
         tx_post_date    => '20140101170000',
@@ -146,23 +146,23 @@ tt('_augment() adds correct set of data.',
     got => hashref2str($book->_augment($txn)) =~ /$exp/,
     exp => 1);
 
-$book->add_txn($txn);
+$book->add_transaction($txn);
 
-tt('add_txn() deducted from source account correctly.',
-    got => $book->acct_bal('Assets:Cash'),
-    exp => $cash_bal - $txn->{tx_amt} );
+tt('add_transaction() deducted from source account correctly.',
+    got => $book->account_balance('Assets:Cash'),
+    exp => $cash_bal - $txn->{amount} );
 
-tt('add_txn() added to target account correctly.',
-    got => $book->acct_bal('Assets:aBank'),
-    exp => $bank_bal + $txn->{tx_amt} );
+tt('add_transaction() added to target account correctly.',
+    got => $book->account_balance('Assets:aBank'),
+    exp => $bank_bal + $txn->{amount} );
 
-tt('add_txn() kept parent account (Assets) unchanged.',
-    got => $book->acct_bal('Assets'),
+tt('add_transaction() kept parent account (Assets) unchanged.',
+    got => $book->account_balance('Assets'),
     exp => $asset_bal );
 
-tt('add_txn() does not clutter its input',
+tt('add_transaction() does not clutter its input',
     got => join('|', sort keys %{$txn}),
-    exp => 'tx_amt|tx_date|tx_description|tx_from_acct|tx_num|tx_to_acct');
+    exp => 'amount|date|description|from_account|number|to_account');
 
 #------------------------------------------------------------------
 # A test utility

@@ -4,7 +4,7 @@
 
 =head1 VERSION
 
-  version 0.01
+  version 0.02
 
 =head1 SYNOPSIS
 
@@ -14,22 +14,22 @@
   $book = GnuCash::SQLite->new(db => 'my_accounts.gnucash');
 
   # get account balances
-  $book->acct_bal('Assets:Cash');   # always provide account names in full
-  $book->acct_bal('Assets');        # includes child accounts e.g. Assets:Cash
+  $on_hand = $book->account_balance('Assets:Cash');
+  $total   = $book->account_balance('Assets');
 
   # add a transaction
-  $book->add_txn({
-      tx_date        => '20140102',
-      tx_description => 'Deposit monthly savings',
-      tx_from_acct   => 'Assets:Cash',
-      tx_to_acct     => 'Assets:aBank',
-      tx_amt         => 2540.15,
-      tx_num         => ''
+  $book->add_transaction({
+      date         => '20140102',
+      description  => 'Deposit monthly savings',
+      from_account => 'Assets:Cash',
+      to_account   => 'Assets:aBank',
+      amount       => 2540.15,
+      number       => ''
   });
 
   # access internal GUIDs
-  $book->acct_guid('Assets:Cash');  # GUID of account
-  $book->ccy_guid('Assets:Cash');   # GUID of currency 
+  $book->account_guid('Assets:Cash');     # GUID of account
+  $book->commodity_guid('Assets:Cash');   # GUID of currency 
 
 =head1 DESCRIPTION
 
@@ -56,10 +56,10 @@ parameter.
 If no file parameter is passed, or if the file is missing, the program will
 terminate.
 
-=head2 acct_bal
+=head2 account_balance
 
-  $book->acct_bal('Assets:Cash');   # always provide account names in full
-  $book->acct_bal('Assets');        # includes child accounts e.g. Assets:Cash
+  $book->account_balance('Assets:Cash');   # always provide account names in full
+  $book->account_balance('Assets');        # includes child accounts e.g. Assets:Cash
 
 Given an account name, return the balance in the account. Account names must
 be provided in full to distinguish between accounts with the same name but
@@ -68,25 +68,25 @@ different parents e.g. Assets:Alice:Cash and Assets:Bob:Cash
 If a parent account name is provided, the total balance, which includes all
 children accounts, will be returned.
 
-=head2 add_txn
+=head2 add_transaction
 
   $deposit = {
-      tx_date        => '20140102',
-      tx_description => 'Deposit monthly savings',
-      tx_from_acct   => 'Assets:Cash',
-      tx_to_acct     => 'Assets:aBank',
-      tx_amt         => 2540.15,
-      tx_num         => ''
+      date         => '20140102',
+      description  => 'Deposit monthly savings',
+      from_account => 'Assets:Cash',
+      to_account   => 'Assets:aBank',
+      amount       => 2540.15,
+      number       => ''
   };
-  $book->add_txn($deposit);
+  $book->add_transaction($deposit);
 
 A transaction is defined to have the fields as listed in the example above.
 All fields are mandatory and hopefully self-explanatory. Constraints on some
 of the fields are listed below:
 
-    tx_date         Date of the transaction. Formatted as YYYYMMDD.
-    tx_from_acct    Full account name required.
-    tx_to_acct      Full account name required.
+    date         Date of the transaction. Formatted as YYYYMMDD.
+    from_account Full account name required.
+    to_account   Full account name required.
 
 
 =head1 CAVEATS/LIMITATIONS
