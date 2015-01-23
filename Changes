@@ -11,3 +11,6 @@ Revision history for Perl module GnuCash::SQLite.
         - http://bit.ly/1vihVE3
         - http://c2.com/cgi/wiki?GoodVariableNames
 
+0.03 22 Jan 2015
+    - test now work in various timezones
+

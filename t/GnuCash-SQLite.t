@@ -10,6 +10,7 @@ use warnings;
 use DateTime;
 use File::Copy qw/copy/;
 use Try::Tiny;
+use Time::Local;
 use lib 'lib';
 
 use Test::More tests => 22;
@@ -48,9 +49,11 @@ tt('commodity_guid() found correct GUID.',
     got => $reader->commodity_guid('Assets:Cash'),
     exp => 'be2788c5c017bb63c859430612e64093');
 
+my ($ss,$mm,$hh,$DD,$MM,$YY) = gmtime(timelocal(0,0,0,1,0,114));
+my $utc_dttm = sprintf('%04d%02d%02d%02d%02d%02d', $YY+1900,$MM+1,$DD,$hh,$mm,$ss);
 tt('UTC_post_date() generated correct timestamp.',
     got => $reader->UTC_post_date('20140101'),
-    exp => '20131231170000');
+    exp => $utc_dttm);
 
 my $dt = DateTime->now();
 tt('UTC_enter_date() generated correct timestamp.',
@@ -133,7 +136,7 @@ $exp = hashref2str({
         number       => '',
         tx_guid         => '.' x 32,    # some 32-char string
         tx_ccy_guid     => 'be2788c5c017bb63c859430612e64093',
-        tx_post_date    => '20140101170000',
+        tx_post_date    => $book->UTC_post_date('20140102'),
         tx_enter_date   => '\d' x 14,    # some 14-char numeric string
         tx_from_guid    => '6a86047e3b12a6c4748fbf8fde76c0c0',
         tx_to_guid      => '6b870a6ef2c3fbbff0ec6df32108ac34',
@@ -143,7 +146,7 @@ $exp = hashref2str({
         splt_guid_2     => '.' x 32     # some 32-char string 
     });
 tt('_augment() adds correct set of data.',
-    got => hashref2str($book->_augment($txn)) =~ /$exp/,
+    got => (hashref2str($book->_augment($txn)) =~ /$exp/) || '0',
     exp => 1);
 
 $book->add_transaction($txn);
