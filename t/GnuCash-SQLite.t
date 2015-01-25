@@ -13,7 +13,7 @@ use Try::Tiny;
 use Time::Local;
 use lib 'lib';
 
-use Test::More tests => 22;
+use Test::More tests => 24;
 BEGIN { use_ok('GnuCash::SQLite') };
 
 #########################
@@ -166,6 +166,16 @@ tt('add_transaction() kept parent account (Assets) unchanged.',
 tt('add_transaction() does not clutter its input',
     got => join('|', sort keys %{$txn}),
     exp => 'amount|date|description|from_account|number|to_account');
+
+tt('is_locked() returns 0 if unlocked.',
+    got => $book->is_locked,
+    exp => 0);
+
+$book->_runsql('INSERT INTO gnclock VALUES ("i3","12345")');
+tt('is_locked() returns 1 if another db is access by another app.',
+    got => $book->is_locked,
+    exp => 1);
+$book->_runsql('DELETE FROM gnclock');
 
 #------------------------------------------------------------------
 # A test utility

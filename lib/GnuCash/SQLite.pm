@@ -8,9 +8,18 @@ use DBI;
 use DateTime;
 use Carp;
 use Path::Tiny;
-use Data::Dumper;
 
-our $VERSION = '0.03';
+=head1 NAME
+
+  GnuCash::SQLite - A module to access GnuCash SQLite files
+
+=head1 VERSION
+
+  version 0.04
+
+=cut
+
+our $VERSION = '0.04';
 
 sub new {
     my $class = shift;
@@ -228,6 +237,14 @@ sub _augment {
     return $txn;
 }
 
+# Return 1 if Gnucash database is locked,
+# Return 0 if no other application has locked the database.
+sub is_locked {
+    my $self = shift;
+    my $sql = "SELECT count(*) FROM gnclock";
+    return $self->_runsql($sql)->[0][0] == 0 ? 0 : 1;
+}
+
 # Given an SQL statement and optionally a list of arguments
 # execute the SQL with those arguments
 sub _runsql {
@@ -246,14 +263,6 @@ sub _runsql {
 __END__
 # Below is stub documentation for your module. You'd better edit it!
 
-=head1 NAME
-
-  GnuCash::SQLite - A module to access GnuCash SQLite files
-
-=head1 VERSION
-
-  version 0.03
-
 =head1 SYNOPSIS
 
   use GnuCash::SQLite;
@@ -264,6 +273,10 @@ __END__
   # get account balances
   $on_hand = $book->account_balance('Assets:Cash');
   $total   = $book->account_balance('Assets');
+
+  # check if book is locked by another application
+  die "Book is currently used by another application." 
+    if $book->is_locked;
 
   # add a transaction
   $book->add_transaction({

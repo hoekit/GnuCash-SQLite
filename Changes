@@ -1,8 +1,11 @@
 Revision history for Perl module GnuCash::SQLite.
 
-0.01  14 Jun 2014
-	- original version; created by h2xs 1.23 with options
-		-XAn GnuCash::SQLite
+0.04 25 Jan 2015
+    - added "is_locked" function to check is SQLite db is locked by another
+      application.
+
+0.03 22 Jan 2015
+    - test now work in various timezones
 
 0.02  16 Jun 2014
 	- use full words instead of variables in interface
@@ -11,6 +14,7 @@ Revision history for Perl module GnuCash::SQLite.
         - http://bit.ly/1vihVE3
         - http://c2.com/cgi/wiki?GoodVariableNames
 
-0.03 22 Jan 2015
-    - test now work in various timezones
+0.01  14 Jun 2014
+	- original version; created by h2xs 1.23 with options
+		-XAn GnuCash::SQLite
 

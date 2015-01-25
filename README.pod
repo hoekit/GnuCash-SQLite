@@ -4,7 +4,7 @@
 
 =head1 VERSION
 
-  version 0.03
+  version 0.04
 
 =head1 SYNOPSIS
 
@@ -16,6 +16,10 @@
   # get account balances
   $on_hand = $book->account_balance('Assets:Cash');
   $total   = $book->account_balance('Assets');
+
+  # check if book is locked by another application
+  die "Book is currently used by another application." 
+    if $book->is_locked;
 
   # add a transaction
   $book->add_transaction({
