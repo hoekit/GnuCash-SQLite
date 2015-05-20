@@ -1,5 +1,8 @@
 Revision history for Perl module GnuCash::SQLite.
 
+0.06 20 May 2015
+    - Use Test::Number::Delta for checking numeric values in tests
+
 0.05 17 May 2015
     - add required module DBD::SQLite in Makefile
 
