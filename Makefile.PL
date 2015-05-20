@@ -15,5 +15,8 @@ WriteMakefile(
         'UUID::Tiny'        => 1.04,
         'DateTime'          => 1.12,
         'Path::Tiny'        => 0.055
-    } # e.g., Module::Name => 1.1
+    }, # e.g., Module::Name => 1.1
+    TEST_REQUIRES   => {
+        'Test::Number::Delta'   => 0,
+    },
 );

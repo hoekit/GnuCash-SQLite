@@ -11,6 +11,7 @@ use DateTime;
 use File::Copy qw/copy/;
 use Try::Tiny;
 use Time::Local;
+use Test::Number::Delta;
 use lib 'lib';
 
 use Test::More tests => 24;
@@ -151,13 +152,13 @@ tt('_augment() adds correct set of data.',
 
 $book->add_transaction($txn);
 
-tt('add_transaction() deducted from source account correctly.',
-    got => $book->account_balance('Assets:Cash'),
-    exp => $cash_bal - $txn->{amount} );
+delta_ok($book->account_balance('Assets:Cash'),
+         $cash_bal - $txn->{amount},
+         'add_transaction() deducted from source account correctly.');
 
-tt('add_transaction() added to target account correctly.',
-    got => $book->account_balance('Assets:aBank'),
-    exp => $bank_bal + $txn->{amount} );
+delta_ok($book->account_balance('Assets:aBank'),
+         $bank_bal + $txn->{amount},
+         'add_transaction() added to target account correctly.');
 
 tt('add_transaction() kept parent account (Assets) unchanged.',
     got => $book->account_balance('Assets'),
