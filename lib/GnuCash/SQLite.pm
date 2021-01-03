@@ -133,7 +133,7 @@ sub _node_bal {
     my $self = shift;
     my $guid = shift;
 
-    my $sql = "SELECT SUM(value_num/(value_denom*1.0)) FROM splits "
+    my $sql = "SELECT printf('%.2f',SUM(value_num/(value_denom*1.0))) FROM splits "
             . "WHERE account_guid = ?";
     return $self->_runsql($sql,$guid)->[0][0] || 0;
 }
