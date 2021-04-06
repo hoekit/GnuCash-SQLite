@@ -19,7 +19,7 @@ use Path::Tiny;
 
 =cut
 
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 
 sub new {
     my $class = shift;
@@ -390,6 +390,10 @@ review and contribution under the terms of the license.
     <https://github.com/hoekit/GnuCash-SQLite>
 
     git clone git@github.com:hoekit/GnuCash-SQLite.git
+
+=head1 CREDITS
+
+Credit goes to L<Sawyer X|https://metacpan.org/author/XSAWYERX> for fixing long-standing floating-point bug.
 
 =head1 AUTHOR
 

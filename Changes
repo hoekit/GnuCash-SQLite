@@ -1,5 +1,9 @@
 Revision history for Perl module GnuCash::SQLite.
 
+0.07 06 Apr 2020
+    - Include fixes from Sawyer X
+        - https://github.com/hoekit/GnuCash-SQLite/pull/3
+
 0.06 20 May 2015
     - Use Test::Number::Delta for checking numeric values in tests
 

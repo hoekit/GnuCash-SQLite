@@ -1,2 +1,7 @@
-t/scratch.db
+# Generated tarballs
+GnuCash-SQLite-*
 
+# Generated Makefile
+Makefile.old
+
+t/scratch.db
