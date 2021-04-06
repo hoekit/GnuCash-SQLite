@@ -15,7 +15,7 @@ use Path::Tiny;
 
 =head1 VERSION
 
-  version 0.06
+  version 0.07
 
 =cut
 
