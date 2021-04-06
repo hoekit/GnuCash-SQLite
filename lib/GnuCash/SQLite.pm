@@ -15,11 +15,11 @@ use Path::Tiny;
 
 =head1 VERSION
 
-  version 0.07
+  version 0.7.1
 
 =cut
 
-our $VERSION = '0.07';
+our $VERSION = '0.7.1';
 
 sub new {
     my $class = shift;
