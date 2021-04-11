@@ -1,5 +1,9 @@
 Revision history for Perl module GnuCash::SQLite.
 
+0.08 10 Apr 2020
+    - Updated dependency DBD::SQLite to minimum 1.42 to prevent failing
+      tests
+
 0.7.1 06 Apr 2020
     - Use X.Y.Z numbering
 
