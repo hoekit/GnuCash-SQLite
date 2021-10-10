@@ -5,4 +5,6 @@ MANIFEST
 README
 lib/GnuCash/SQLite.pm
 t/GnuCash-SQLite.t
+t/10_foreign_currencies.t
 t/sample.db
+t/sample2.db
